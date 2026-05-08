@@ -15,19 +15,19 @@ jobs:
         include:
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            ext: deb
+            bundle: deb
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            ext: AppImage
+            bundle: appimage
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-            ext: msi
+            bundle: msi
           - platform: macos-latest
             target: x86_64-apple-darwin
-            ext: dmg
+            bundle: dmg
           - platform: macos-latest
             target: aarch64-apple-darwin
-            ext: dmg
+            bundle: dmg
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -58,12 +58,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: --target ${{ matrix.target }} --bundles ${{ matrix.ext }}
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundle }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: snake-game-${{ matrix.target }}.${{ matrix.ext }}
+          name: snake-game-${{ matrix.target }}-${{ matrix.bundle }}
           path: src-tauri/target/${{ matrix.target }}/release/bundle/
 
   build-android:
@@ -139,10 +139,10 @@ jobs:
         with:
           body_path: release.md
           files: |
-            artifacts/**/*.msi
-            artifacts/**/*.dmg
-            artifacts/**/*.deb
-            artifacts/**/*.AppImage
+            artifacts/**/snake-game*.msi
+            artifacts/**/snake-game*.dmg
+            artifacts/**/snake-game*.deb
+            artifacts/**/snake-game*.AppImage
             artifacts/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
