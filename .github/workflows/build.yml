@@ -1,0 +1,148 @@
+name: Build & Release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            ext: deb
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            ext: AppImage
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: msi
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            ext: dmg
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            ext: dmg
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.ext }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: snake-game-${{ matrix.target }}.${{ matrix.ext }}
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/
+
+  build-android:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies (Ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
+
+      - name: Initialize Android project
+        run: npx tauri android init
+
+      - name: Build Android APK
+        run: npx tauri android build --apk
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: snake-game-android
+          path: src-tauri/gen/android/app/build/outputs/apk/release/
+
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-desktop, build-android]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate release notes
+        run: |
+          echo "## Snake Game v\${{ github.ref_name }}" > release.md
+          echo "" >> release.md
+          echo "### Downloads" >> release.md
+          echo "- Windows: \`snake-game-x86_64-pc-windows-msvc.msi\`" >> release.md
+          echo "- macOS Intel: \`snake-game-x86_64-apple-darwin.dmg\`" >> release.md
+          echo "- macOS Apple Silicon: \`snake-game-aarch64-apple-darwin.dmg\`" >> release.md
+          echo "- Linux: \`snake-game-x86_64-unknown-linux-gnu.deb\` / \`.AppImage\`" >> release.md
+          echo "- Android: \`snake-game-android.apk\`" >> release.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release.md
+          files: |
+            artifacts/**/*.msi
+            artifacts/**/*.dmg
+            artifacts/**/*.deb
+            artifacts/**/*.AppImage
+            artifacts/**/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake Game</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <h1>Snake Game</h1>
+      <div id="score">Score: <span id="score-value">0</span></div>
+      <canvas id="game-canvas"></canvas>
+      <div id="controls">
+        <button id="btn-new-game">New Game</button>
+        <button id="btn-pause">Pause</button>
+      </div>
+      <div id="touch-controls">
+        <button class="touch-btn" data-dir="Up">▲</button>
+        <div>
+          <button class="touch-btn" data-dir="Left">◄</button>
+          <button class="touch-btn" data-dir="Down">▼</button>
+          <button class="touch-btn" data-dir="Right">►</button>
+        </div>
+      </div>
+      <div id="instructions">
+        <p>Arrow keys or touch buttons to control the snake. Press New Game to start.</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

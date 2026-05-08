@@ -1,0 +1,14 @@
+node_modules/
+dist/
+target/
+.DS_Store
+*.log
+.env
+*.apk
+*.aab
+*.ipa
+*.dmg
+*.deb
+*.AppImage
+*.msi
+*.exe
