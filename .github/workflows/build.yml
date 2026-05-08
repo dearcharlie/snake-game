@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -142,10 +145,10 @@ jobs:
         with:
           body_path: release.md
           files: |
-            artifacts/**/snake-game*.msi
-            artifacts/**/snake-game*.dmg
-            artifacts/**/snake-game*.deb
-            artifacts/**/snake-game*.AppImage
+            artifacts/**/*.msi
+            artifacts/**/*.dmg
+            artifacts/**/*.deb
+            artifacts/**/*.AppImage
             artifacts/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
